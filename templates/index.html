@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Face Detection & Comparison</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+        }
+        .step {
+            margin: 30px 0;
+            padding: 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            background: #fafafa;
+        }
+        .step h2 {
+            color: #2c3e50;
+            margin-top: 0;
+        }
+        .file-input {
+            margin: 15px 0;
+        }
+        .file-input input[type="file"] {
+            padding: 10px;
+            border: 2px dashed #ddd;
+            border-radius: 5px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .btn {
+            background: #3498db;
+            color: white;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+            transition: background 0.3s;
+        }
+        .btn:hover {
+            background: #2980b9;
+        }
+        .btn:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+        }
+        .btn-success {
+            background: #2ecc71;
+        }
+        .btn-success:hover {
+            background: #27ae60;
+        }
+        .btn-danger {
+            background: #e74c3c;
+        }
+        .btn-danger:hover {
+            background: #c0392b;
+        }
+        .result {
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 5px;
+        }
+        .success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .debug {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .face-preview {
+            display: flex;
+            gap: 20px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        .face-item {
+            text-align: center;
+            flex: 1;
+            min-width: 250px;
+        }
+        .face-item img {
+            max-width: 200px;
+            max-height: 200px;
+            border: 3px solid #ddd;
+            border-radius: 8px;
+            object-fit: cover;
+        }
+        .face-item h3 {
+            margin: 10px 0 5px 0;
+            color: #2c3e50;
+        }
+        .camera-container {
+            text-align: center;
+            margin: 20px 0;
+        }
+        #video {
+            width: 100%;
+            max-width: 400px;
+            border: 3px solid #ddd;
+            border-radius: 8px;
+        }
+        #canvas {
+            display: none;
+        }
+        .analytics {
+            background: #e8f4f8;
+            border: 2px solid #3498db;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .analytics h3 {
+            color: #2c3e50;
+            margin-top: 0;
+        }
+        .metric {
+            display: flex;
+            justify-content: space-between;
+            margin: 10px 0;
+            padding: 8px;
+            background: white;
+            border-radius: 4px;
+        }
+        .metric-label {
+            font-weight: bold;
+            color: #34495e;
+        }
+        .metric-value {
+            color: #2c3e50;
+        }
+        .similarity-score {
+            font-size: 24px;
+            font-weight: bold;
+            text-align: center;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+        .match {
+            background: #d4edda;
+            color: #155724;
+            border: 2px solid #c3e6cb;
+        }
+        .no-match {
+            background: #f8d7da;
+            color: #721c24;
+            border: 2px solid #f5c6cb;
+        }
+        .progress {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .method-badge {
+            background: #3498db;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        .aadhaar-info {
+            background: #f8f9fa;
+            border: 2px solid #6c757d;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        .aadhaar-info h4 {
+            margin-top: 0;
+            color: #495057;
+        }
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .info-item {
+            background: white;
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid #dee2e6;
+        }
+        .info-label {
+            font-weight: bold;
+            color: #6c757d;
+            font-size: 12px;
+            text-transform: uppercase;
+        }
+        .info-value {
+            color: #495057;
+            margin-top: 2px;
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+        .status-online {
+            background-color: #28a745;
+        }
+        .status-offline {
+            background-color: #dc3545;
+        }
+        .system-status {
+            background: #e9ecef;
+            border: 1px solid #ced4da;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Face Detection & Comparison System <span class="method-badge">FaceNet AI</span></h1>
+        
+        <!-- System Status -->
+        <div class="step">
+            <h2>System Status</h2>
+            <button class="btn" onclick="checkSystemStatus()">Check System Status</button>
+            <div id="systemStatus"></div>
+        </div>
+        
+        <!-- Debug Info -->
+        <div class="step">
+            <h2>Debug Information</h2>
+            <button class="btn" onclick="showDebugInfo()">Show Debug Info</button>
+            <div id="debugInfo"></div>
+        </div>
+        
+        <!-- Step 1: Upload Aadhaar -->
+        <div class="step">
+            <h2>Step 1: Upload Aadhaar Card</h2>
+            <div class="file-input">
+                <input type="file" id="aadhaarFile" accept="image/*" />
+            </div>
+            <button class="btn" onclick="uploadAadhaar()">Extract Face & Information from Aadhaar</button>
+            <div id="aadhaarResult"></div>
+        </div>
+        
+        <!-- Step 2: Live Camera Capture -->
+        <div class="step">
+            <h2>Step 2: Capture Live Photo</h2>
+            <div class="camera-container">
+                <video id="video" autoplay playsinline></video>
+                <canvas id="canvas"></canvas>
+                <br>
+                <button class="btn" onclick="startCamera()">Start Camera</button>
+                <button class="btn btn-success" onclick="capturePhoto()" id="captureBtn" disabled>Capture Photo</button>
+                <button class="btn btn-danger" onclick="stopCamera()">Stop Camera</button>
+            </div>
+            <div id="liveResult"></div>
+        </div>
+        
+        <!-- Step 3: Compare Faces -->
+        <div class="step">
+            <h2>Step 3: Face Comparison</h2>
+            <button class="btn btn-success" onclick="compareFaces()" id="compareBtn" disabled>Compare Faces</button>
+            <div class="progress" id="progress">
+                <div class="spinner"></div>
+                <p>Comparing faces using FaceNet AI...</p>
+            </div>
+            <div id="comparisonResult"></div>
+        </div>
+        
+        <!-- Face Preview Section -->
+        <div class="face-preview" id="facePreview"></div>
+    </div>
+
+    <script>
+        let extractedFaceData = null;
+        let liveFaceData = null;
+        let stream = null;
+
+        async function checkSystemStatus() {
+            try {
+                const response = await fetch('/status');
+                const status = await response.json();
+                
+                const statusHtml = `
+                    <div class="system-status">
+                        <h4>AI Model Status</h4>
+                        <div class="metric">
+                            <span class="metric-label">
+                                <span class="status-indicator ${status.facenet_available ? 'status-online' : 'status-offline'}"></span>
+                                FaceNet Available
+                            </span>
+                            <span class="metric-value">${status.facenet_available ? 'Yes' : 'No'}</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">
+                                <span class="status-indicator ${status.using_pytorch ? 'status-online' : 'status-offline'}"></span>
+                                Using PyTorch
+                            </span>
+                            <span class="metric-value">${status.using_pytorch ? 'Yes' : 'No (Fallback)'}</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">
+                                <span class="status-indicator ${status.mtcnn_available ? 'status-online' : 'status-offline'}"></span>
+                                MTCNN Face Detection
+                            </span>
+                            <span class="metric-value">${status.mtcnn_available ? 'Yes' : 'No (OpenCV)'}</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">
+                                <span class="status-indicator ${status.ocr_available ? 'status-online' : 'status-offline'}"></span>
+                                OCR Available
+                            </span>
+                            <span class="metric-value">${status.ocr_available ? 'Yes' : 'No'}</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">
+                                <span class="status-indicator ${status.cuda_available ? 'status-online' : 'status-offline'}"></span>
+                                CUDA GPU
+                            </span>
+                            <span class="metric-value">${status.cuda_available ? 'Available' : 'CPU Only'}</span>
+                        </div>
+                    </div>
+                `;
+                document.getElementById('systemStatus').innerHTML = statusHtml;
+            } catch (error) {
+                showResult('systemStatus', 'Error checking system status: ' + error.message, 'error');
+            }
+        }
+
+        function showDebugInfo() {
+            const debugHtml = `
+                <div class="result debug">
+                    <strong>Extracted Face Data:</strong><br>
+                    ${extractedFaceData ? JSON.stringify({
+                        ...extractedFaceData, 
+                        aadhaar_info: extractedFaceData.aadhaar_info || 'Not available'
+                    }, null, 2) : 'null'}
+                    <br><br>
+                    <strong>Live Face Data:</strong><br>
+                    ${liveFaceData ? JSON.stringify({...liveFaceData, live_embedding: `[Array of ${liveFaceData.live_embedding?.length || 0} elements]`}, null, 2) : 'null'}
+                    <br><br>
+                    <strong>Ready to Compare:</strong> ${extractedFaceData && liveFaceData ? 'YES' : 'NO'}
+                </div>
+            `;
+            document.getElementById('debugInfo').innerHTML = debugHtml;
+        }
+
+        async function uploadAadhaar() {
+            const fileInput = document.getElementById('aadhaarFile');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                showResult('aadhaarResult', 'Please select an Aadhaar card image', 'error');
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('aadhaar', file);
+            
+            showResult('aadhaarResult', 'Processing image, extracting face embedding and reading Aadhaar information...', 'success');
+            
+            try {
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                console.log('Upload result:', result);
+                
+                if (result.success) {
+                    extractedFaceData = result;
+                    
+                    let resultMessage = 'Face extracted and FaceNet embedding generated successfully!';
+                    if (result.ocr_available && result.aadhaar_info) {
+                        resultMessage += ' Aadhaar information extracted.';
+                    } else if (!result.ocr_available) {
+                        resultMessage += ' (OCR not available - text extraction skipped)';
+                    }
+                    
+                    showResult('aadhaarResult', resultMessage, 'success');
+                    showFacePreview('extracted', result.face_url);
+                    
+                    // Show Aadhaar information if available
+                    if (result.aadhaar_info) {
+                        showAadhaarInfo(result.aadhaar_info);
+                    }
+                    
+                    console.log('extractedFaceData set:', extractedFaceData);
+                } else {
+                    showResult('aadhaarResult', result.message, 'error');
+                }
+            } catch (error) {
+                console.error('Upload error:', error);
+                showResult('aadhaarResult', 'Error uploading file: ' + error.message, 'error');
+            }
+        }
+
+        function showAadhaarInfo(aadhaarInfo) {
+            const infoHtml = `
+                <div class="aadhaar-info">
+                    <h4>Extracted Aadhaar Information</h4>
+                    <div class="info-grid">
+                        ${aadhaarInfo.name ? `
+                            <div class="info-item">
+                                <div class="info-label">Name</div>
+                                <div class="info-value">${aadhaarInfo.name}</div>
+                            </div>
+                        ` : ''}
+                        ${aadhaarInfo.dob ? `
+                            <div class="info-item">
+                                <div class="info-label">Date of Birth</div>
+                                <div class="info-value">${aadhaarInfo.dob}</div>
+                            </div>
+                        ` : ''}
+                        ${aadhaarInfo.age ? `
+                            <div class="info-item">
+                                <div class="info-label">Age</div>
+                                <div class="info-value">${aadhaarInfo.age} years</div>
+                            </div>
+                        ` : ''}
+                        ${aadhaarInfo.gender ? `
+                            <div class="info-item">
+                                <div class="info-label">Gender</div>
+                                <div class="info-value">${aadhaarInfo.gender}</div>
+                            </div>
+                        ` : ''}
+                        ${aadhaarInfo.aadhaar_number ? `
+                            <div class="info-item">
+                                <div class="info-label">Aadhaar Number</div>
+                                <div class="info-value">${aadhaarInfo.aadhaar_number}</div>
+                            </div>
+                        ` : ''}
+                        ${aadhaarInfo.father_name ? `
+                            <div class="info-item">
+                                <div class="info-label">Father's Name</div>
+                                <div class="info-value">${aadhaarInfo.father_name}</div>
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+            
+            // Insert the Aadhaar info after the result div
+            const resultDiv = document.querySelector('#aadhaarResult');
+            resultDiv.insertAdjacentHTML('afterend', infoHtml);
+        }
+
+        async function startCamera() {
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { width: 640, height: 480 } 
+                });
+                const video = document.getElementById('video');
+                video.srcObject = stream;
+                document.getElementById('captureBtn').disabled = false;
+                showResult('liveResult', 'Camera started successfully', 'success');
+            } catch (error) {
+                showResult('liveResult', 'Error accessing camera: ' + error.message, 'error');
+            }
+        }
+
+        async function capturePhoto() {
+            const video = document.getElementById('video');
+            const canvas = document.getElementById('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            ctx.drawImage(video, 0, 0);
+            
+            const imageData = canvas.toDataURL('image/jpeg', 0.8);
+            
+            showResult('liveResult', 'Processing live photo and generating FaceNet embedding...', 'success');
+            
+            try {
+                const response = await fetch('/capture_live', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ image: imageData })
+                });
+                
+                const result = await response.json();
+                console.log('Capture result:', result);
+                
+                if (result.success) {
+                    liveFaceData = result;
+                    showResult('liveResult', 'Live photo captured and FaceNet embedding generated successfully!', 'success');
+                    showFacePreview('live', result.live_face_url);
+                    console.log('liveFaceData set:', liveFaceData);
+                    
+                    // Enable comparison if both faces are available
+                    if (extractedFaceData && liveFaceData) {
+                        document.getElementById('compareBtn').disabled = false;
+                        console.log('Compare button enabled');
+                    }
+                } else {
+                    showResult('liveResult', result.message, 'error');
+                }
+            } catch (error) {
+                console.error('Capture error:', error);
+                showResult('liveResult', 'Error processing live photo: ' + error.message, 'error');
+            }
+        }
+
+        function stopCamera() {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                stream = null;
+                document.getElementById('captureBtn').disabled = true;
+                showResult('liveResult', 'Camera stopped', 'success');
+            }
+        }
+
+        async function compareFaces() {
+            console.log('Compare faces called');
+            console.log('extractedFaceData:', extractedFaceData);
+            console.log('liveFaceData:', liveFaceData);
+            
+            if (!extractedFaceData || !liveFaceData) {
+                showResult('comparisonResult', 'Please complete both steps first', 'error');
+                return;
+            }
+            
+            // Check if required fields exist
+            if (!extractedFaceData.embedding_file) {
+                showResult('comparisonResult', 'Missing embedding file from extracted face', 'error');
+                console.error('Missing embedding_file:', extractedFaceData);
+                return;
+            }
+            
+            if (!liveFaceData.live_embedding) {
+                showResult('comparisonResult', 'Missing live embedding data', 'error');
+                console.error('Missing live_embedding:', liveFaceData);
+                return;
+            }
+            
+            const payload = {
+                embedding_file: extractedFaceData.embedding_file,
+                info_file: extractedFaceData.info_file, // Include info file
+                live_embedding: liveFaceData.live_embedding
+            };
+            
+            console.log('Sending payload:', payload);
+            console.log('Payload JSON:', JSON.stringify(payload));
+            
+            document.getElementById('progress').style.display = 'block';
+            
+            try {
+                const response = await fetch('/compare_faces', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(payload)
+                });
+                
+                console.log('Response status:', response.status);
+                console.log('Response headers:', response.headers);
+                
+                const result = await response.json();
+                console.log('Comparison result:', result);
+                
+                document.getElementById('progress').style.display = 'none';
+                
+                if (result.success) {
+                    showAnalytics(result.analytics);
+                } else {
+                    showResult('comparisonResult', result.message + (result.debug_info ? `<br>Debug: ${JSON.stringify(result.debug_info)}` : ''), 'error');
+                }
+            } catch (error) {
+                console.error('Comparison error:', error);
+                document.getElementById('progress').style.display = 'none';
+                showResult('comparisonResult', 'Error comparing faces: ' + error.message, 'error');
+            }
+        }
+
+        function showResult(elementId, message, type) {
+            const element = document.getElementById(elementId);
+            element.innerHTML = `<div class="result ${type}">${message}</div>`;
+        }
+
+        function showFacePreview(type, imageUrl) {
+            const preview = document.getElementById('facePreview');
+            const title = type === 'extracted' ? 'Extracted Face (Aadhaar)' : 'Live Captured Face';
+            
+            const faceItem = document.createElement('div');
+            faceItem.className = 'face-item';
+            faceItem.innerHTML = `
+                <h3>${title}</h3>
+                <img src="${imageUrl}" alt="${title}">
+            `;
+            
+            // Remove existing preview of the same type
+            const existing = preview.querySelector(`[data-type="${type}"]`);
+            if (existing) {
+                existing.remove();
+            }
+            
+            faceItem.setAttribute('data-type', type);
+            preview.appendChild(faceItem);
+        }
+
+        function showAnalytics(analytics) {
+            const similarity = analytics.similarity_percentage;
+            const isMatch = analytics.is_match;
+            const aadhaarInfo = analytics.aadhaar_info || {};
+            
+            let analyticsHtml = `
+                <div class="analytics">
+                    <h3>FaceNet AI Comparison Analytics</h3>
+                    
+                    <div class="similarity-score ${isMatch ? 'match' : 'no-match'}">
+                        ${similarity.toFixed(2)}% Similarity
+                        <br>
+                        <span style="font-size: 18px;">${analytics.match_status}</span>
+                    </div>
+            `;
+            
+            // Add person information if available
+            if (aadhaarInfo.name || aadhaarInfo.age || aadhaarInfo.gender) {
+                analyticsHtml += `
+                    <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 15px 0;">
+                        <h4 style="margin-top: 0; color: #495057;">Identity Information</h4>
+                        <div class="info-grid">
+                `;
+                
+                if (aadhaarInfo.name) {
+                    analyticsHtml += `
+                        <div class="info-item">
+                            <div class="info-label">Name</div>
+                            <div class="info-value">${aadhaarInfo.name}</div>
+                        </div>
+                    `;
+                }
+                
+                if (aadhaarInfo.age) {
+                    analyticsHtml += `
+                        <div class="info-item">
+                            <div class="info-label">Age</div>
+                            <div class="info-value">${aadhaarInfo.age} years</div>
+                        </div>
+                    `;
+                }
+                
+                if (aadhaarInfo.gender) {
+                    analyticsHtml += `
+                        <div class="info-item">
+                            <div class="info-label">Gender</div>
+                            <div class="info-value">${aadhaarInfo.gender}</div>
+                        </div>
+                    `;
+                }
+                
+                if (aadhaarInfo.dob) {
+                    analyticsHtml += `
+                        <div class="info-item">
+                            <div class="info-label">Date of Birth</div>
+                            <div class="info-value">${aadhaarInfo.dob}</div>
+                        </div>
+                    `;
+                }
+                
+                analyticsHtml += `
+                        </div>
+                    </div>
+                `;
+            }
+            
+            analyticsHtml += `
+                    <div class="metric">
+                        <span class="metric-label">AI Method:</span>
+                        <span class="metric-value">${analytics.method_used || 'FaceNet Deep Learning'}</span>
+                    </div>
+                    
+                    <div class="metric">
+                        <span class="metric-label">Using FaceNet:</span>
+                        <span class="metric-value">${analytics.using_facenet ? 'Yes' : 'No (Fallback)'}</span>
+                    </div>
+                    
+                    <div class="metric">
+                        <span class="metric-label">Confidence Level:</span>
+                        <span class="metric-value">${analytics.confidence_level}</span>
+                    </div>
+                    
+                    <div class="metric">
+                        <span class="metric-label">Match Threshold:</span>
+                        <span class="metric-value">${analytics.threshold_used}%</span>
+                    </div>
+                    
+                    <div class="metric">
+                        <span class="metric-label">Verification Status:</span>
+                        <span class="metric-value" style="font-weight: bold; color: ${isMatch ? '#27ae60' : '#e74c3c'}">
+                            ${isMatch ? '✓ VERIFIED' : '✗ NOT VERIFIED'}
+                        </span>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('comparisonResult').innerHTML = analyticsHtml;
+        }
+    </script>
+</body>
+</html>
